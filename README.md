@@ -29,29 +29,45 @@ Using **SmartDNS**:
 
 ## Xray
 
-1. Install via LuCI.
-2. Configure using `config.json`.
-3. Place the `.dat` files, create log files, set up the environment, and enable autostart on boot.
+1. Install via LuCI. 
+2. Update from GitHub release (optional) and move to `/usr/bin/xray`:
+   ```shell
+   mv xray /usr/bin/xray
+   ```
+3. Configure using `config.json` to `/etc/xray/config.json`.
+4. Place the `.dat` files in `/usr/share/xray`, and enable autostart on boot:
+   ```shell
+   mkdir /usr/share/xray
+   ```
 
 ## Tproxy
 
-Place the script in `/etc/init.d/tproxy`.
+The Tproxy script supports both `iptables` and `nftables`. Choose the appropriate script based on your system's configuration.
 
-### Enable Autostart on Boot
+### Differences Between iptables and nftables
 
-To enable the script to run automatically on boot in OpenWrt:
+- **iptables**:
+  - Uses `ipset` to manage reserved IP ranges.
+  - Relies on `iptables` rules for packet marking and forwarding.
+  - Suitable for systems where `iptables` is already in use or preferred.
 
-```shell
-chmod +x /etc/init.d/tproxy  # Ensure the script is executable
-/etc/init.d/tproxy enable    # Enable autostart on boot
-/etc/init.d/tproxy start     # Start the script immediately
-```
+- **nftables**:
+  - Uses a single configuration file for all rules.
+  - Provides better performance and flexibility compared to `iptables`.
+  - Recommended for newer systems or those already using `nftables`.
 
-Verify if the script has been added to system services:
+### Setup Instructions
 
-```shell
-ls -l /etc/rc.d/ | grep tproxy
-```
-
-If you see `S99tproxy`, the script has been successfully added to autostart.
+1. Place the appropriate script (`iptables` or `nftables`) in `/etc/init.d/tproxy`.
+2. Enable autostart on boot:
+   ```shell
+   chmod +x /etc/init.d/tproxy  # Ensure the script is executable
+   /etc/init.d/tproxy enable    # Enable autostart on boot
+   /etc/init.d/tproxy start     # Start the script immediately
+   ```
+3. Verify if the script has been added to system services:
+   ```shell
+   ls -l /etc/rc.d/ | grep tproxy
+   ```
+   If you see `S99tproxy`, the script has been successfully added to autostart.
 
