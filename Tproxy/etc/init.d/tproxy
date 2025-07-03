@@ -1,0 +1,68 @@
+#!/bin/sh /etc/rc.common
+# OpenWrt init script for TPROXY management
+# Place this file at /etc/init.d/tproxy and make it executable
+
+START=99
+STOP=15
+USE_PROCD=1 # 启用 procd 管理
+
+NFT_RULESET="/tmp/tproxy.nft"
+
+start_service() {
+    echo "Starting TPROXY rules..."
+
+    if /usr/sbin/nft list table ip xray >/dev/null 2>&1; then
+        echo "TPROXY rules are already running."
+        return 0
+    fi
+
+    cat <<EOF >$NFT_RULESET
+define RESERVED_IP = {
+    10.0.0.0/8,
+    17.0.0.0/8,
+    100.64.0.0/10,
+    127.0.0.0/8,
+    169.254.0.0/16,
+    172.16.0.0/12,
+    192.0.0.0/24,
+    192.168.0.0/16,
+    224.0.0.0/4,
+    240.0.0.0/4,
+    255.255.255.255/32
+}
+
+table ip xray {
+    chain prerouting {
+        type filter hook prerouting priority mangle; policy accept;
+        ip daddr \$RESERVED_IP return
+        ip protocol tcp tproxy to 127.0.0.1:12345 meta mark set 1
+        ip protocol udp tproxy to 127.0.0.1:12345 meta mark set 1
+    }
+}
+EOF
+
+    ulimit -n 1000000  # 增加文件句柄限制
+
+    # 配置 ip rule 和路由表
+    ip rule add fwmark 1 table 100
+    ip route add local 0.0.0.0/0 dev lo table 100
+
+    # 应用 nft 规则
+    /usr/sbin/nft -f $NFT_RULESET
+}
+
+stop_service() {
+    echo "Stopping TPROXY rules..."
+
+    ip rule del fwmark 1 table 100 || true
+    ip route del local 0.0.0.0/0 dev lo table 100 || true
+
+    # 只删除 xray 相关规则，避免影响其他 nftables 规则
+    /usr/sbin/nft delete table ip xray || true
+}
+
+restart_service() {
+    stop_service
+    sleep 1
+    start_service
+}
