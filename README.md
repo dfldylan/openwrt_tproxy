@@ -22,7 +22,7 @@ Download the required files from [v2ray_rules](https://github.com/Loyalsoldier/v
 
 Using **SmartDNS**:
 
-1. Install via LuCI.
+1. Install via official website (may be 'lite' in source).
 2. Configure traffic splitting using `.txt` files before downloading.
 3. Set up CN DNS servers: `223.5.5.5` / `114.114.114.114`.
 4. Set up GFW DNS servers: `8.8.8.8` / `1.1.1.1`.
